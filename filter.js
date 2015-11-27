@@ -5,20 +5,25 @@
         // ImageBLOB ( callback )
         // Parse { PNG, JPEG }
     };
-    
+
+    /* == Constants == */
+    Filter.$MAX = ( Number.MAX_SAFE_INTEGER || 9007199254740991 ) >>> 0;
+
     Filter.Parse = {
-        Signature: {
-            PNG: "89 50 4E 47 0D 0A 1A 0A",
-            JPG: "FF D8 FF ?"
+        Data: {
+            Signatures: {
+                PNG: "89 50 4E 47 0D 0A 1A 0A",
+                JPG: "FF D8 FF ?"
+            }
         },
-        Direct: function(raw) {
+        Signature: function(raw) {
             var error = new Filter.Error("File Signature Error: "),
-                TYPE = Object.keys( Filter.Parse.Signature ).filter(function (_TYPE) {
-                return Filter.Parse.Signature[ _TYPE ].split(" ").every(function (hex, loc) {
-                    return hex === "?" || raw[ loc ] === parseInt( hex, 16 );
+                TYPE = Object.keys( Filter.Parse.Data.Signatures ).filter(function (_TYPE) {
+                    return Filter.Parse.Data.Signatures[ _TYPE ].split(" ").every(function (hex, loc) {
+                        return hex === "?" || raw[ loc ] === parseInt( hex, 16 );
+                    });
                 });
-            });
-            
+
             if (TYPE.length > 1) error.set("Conflicting signatures", TYPE.join("|")).log();
             if (TYPE.length < 1) error.set("Unknown signature").log();
         }
@@ -30,11 +35,11 @@
                 data  = (request || {}).response || null;
             if (status === 1) {
                 if ( Object.prototype.toString.call( data ) === "[object ArrayBuffer]") {
-                    
-                    var _buffer = new Uint8Array( data );
-                    
+
+                    var _buffer = new Uint8Array( data ),
+                        _length = _buffer.length >>> 0;
                     callback.call( Filter, _buffer );
-                    
+
                 } else {
                     _error.set("Invalid Response", data).log();
                 }
@@ -78,6 +83,8 @@
         this.request.send(data || null);
     };
 
+    /* == Error Handling Class == */
+
     Filter.Error.prototype = {
         import: function( error ) {
             this.error = error.toString();
@@ -89,16 +96,13 @@
                 console.error.apply(this.data, [this.error, this.data]);
             if (alert) // JavaScript
                 alert(this.data + "\n" + this.data);
-            //if (load) // SpiderMonkey / Rhino
-            //    print(this.data + "\n" + this.data);
 
             return this;
         },
         log: function(lim) {
             if (console)
                 console.log(this.error + this.data.join(lim || " "));
-            //if (load)
-            //    print(this.error + this.data.join(lim || " "));
+
             return this;
         },
         set: function() {
