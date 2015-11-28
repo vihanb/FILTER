@@ -1,15 +1,35 @@
 (function($GLOBAL) {
     var Filter = {
-        Error: function( error ) { this.error = error; this.data = Array.prototype.slice.call(arguments, 1) },
-        Load:  function( file, method )  { this.path = file; this.method = method || "GET"; },
+        Error:  function( error )         { this.error     = error; this.data = Array.prototype.slice.call(arguments, 1) },
+        Load:   function( file, method )  { this.path      = file; this.method = method || "GET"; },
+        Plugin: function( name, func )    { Filter[ name ] = Filter.$$Plugin( func ) }
         // ImageBLOB ( callback )
         // Parse { PNG, JPEG }
     };
 
     /* == Constants == */
-    Filter.$MAX  = ( Number.MAX_SAFE_INTEGER || 9007199254740992 ) - 1 >>> 0;
+    Filter.$MAX  = ( Number.MAX_SAFE_INTEGER + 1 || 9007199254740992 ) - 1 >>> 0;
+    
     Filter.$LEN  = 2;
-    Filter.$SIZE = 8 << Filter.$LEN;
+    Filter.$BITS = 8;
+    Filter.$SIZE = Filter.$BITS << Filter.$LEN;
+    
+    Filter.$$Plugin = function(func) {
+        return function() {            
+            var r_args = func.toString().replace(/\s/g,"").split("(")[1].split(")")[0].match(/[A-Za-z$_]+[\w$]*/g) || [],
+                _INPUT = function() { return Array.prototype.slice.call( arguments, 0, ~r_args.indexOf("$OUT") ? -1 : undefined ) },
+                cst    = {
+                    "$IN" : _INPUT,
+                    "$OUT": Filter.Stream
+                };
+            
+            console.log( cst[ "$IN" ]() );
+            
+            r_args = r_args.map(function( arg ) { return cst[ arg ] ? new cst[ arg ]() : null });
+            
+            return r_args;
+        };
+    };
 
     Filter.Parse = {
         Data: {
