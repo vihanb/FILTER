@@ -55,7 +55,7 @@ Loading an image and looping through bytes
 }($FILTER));
 ```
 
-Using `$.Plugin`, and using `$.Parse.Signature`
+Using `$.Plugin`, and using `$.Parse.Signature`, buffer overflow protection
 
 ```js
 (function($, $P) {
@@ -63,7 +63,12 @@ Using `$.Plugin`, and using `$.Parse.Signature`
     new $.Load($IN[0]).Submit( $.Buffer(function($DATA) {
       var signatureLength = $P.Data.Signatures[$P.Signature($DATA)].length,
           bufferLength    = $DATA.length,
-          i               = 0;
+          i               = 0,
+          error           = new $.Error();
+      
+      if (bufferLength > $.$MAX) error.set("Buffer overflow: ", bufferLength).log();
+      
+      bufferLength >>>= 0; // Saftey case
       
       $OUT.SetBuffer(bufferLength);
       
