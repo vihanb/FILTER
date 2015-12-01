@@ -44,7 +44,7 @@ Due to JavaScript's 32-bit nature, buffers are limited to 4GB. An error will be 
 Loading an image and looping through bytes
 
 ```js
-(function($, $P) {
+(function($) {
   new $.Load("my/image").Submit( $.Buffer(function($DATA) {
     for (var len = $DATA.length, i = 0; i < len; i++) {
       // Use: $DATA[i]
@@ -58,7 +58,7 @@ Loading an image and looping through bytes
 Using `$.Plugin`, and using `$.Parse.Signature`
 
 ```js
-(function($) {
+(function($, $P) {
   $.Plugin("ex_plugin", function($IN, $OUT) {
     new $.Load($IN[0]).Submit( $.Buffer(function($DATA) {
       var signatureLength = $P.Data.Signatures[$P.Signature($DATA)].length,
