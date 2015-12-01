@@ -39,5 +39,20 @@ Due to JavaScript's 32-bit nature, buffers are limited to 4GB. An error will be 
   - `suppress`
 
 ---
+# Example
+
+Loading an image and looping through bytes
+
+    (function($) {
+      new $.Load("my/image").Submit( $.Buffer(function($DATA) {
+        for (var len = $DATA.length, i = 0; i < len; i++) {
+          // Use: $DATA[i]
+          // You may wrap in a $.Plugin()
+          // Then you may use $OUT.Buffer()
+        }
+      }));
+    }($FILTER));
+
+---
 
 Will add pretty pictures later.
