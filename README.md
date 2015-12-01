@@ -43,15 +43,48 @@ Due to JavaScript's 32-bit nature, buffers are limited to 4GB. An error will be 
 
 Loading an image and looping through bytes
 
-    (function($) {
-      new $.Load("my/image").Submit( $.Buffer(function($DATA) {
-        for (var len = $DATA.length, i = 0; i < len; i++) {
-          // Use: $DATA[i]
-          // You may wrap in a $.Plugin()
-          // Then you may use $OUT.Buffer()
+```js
+(function($, $P) {
+  new $.Load("my/image").Submit( $.Buffer(function($DATA) {
+    for (var len = $DATA.length, i = 0; i < len; i++) {
+      // Use: $DATA[i]
+      // You may wrap in a $.Plugin()
+      // Then you may use $OUT.Buffer()
+    }
+  }));
+}($FILTER));
+```
+
+Using `$.Plugin`, and using `$.Parse.Signature`
+
+```js
+(function($) {
+  $.Plugin("ex_plugin", function($IN, $OUT) {
+    new $.Load($IN[0]).Submit( $.Buffer(function($DATA) {
+      var signatureLength = $P.Data.Signatures[$P.Signature($DATA)].length,
+          bufferLength    = $DATA.length,
+          i               = 0;
+      
+      $OUT.SetBuffer(bufferLength);
+      
+      for (; i < bufferLength; i++) {
+        if (i > signatureLength) {
+          // Modify `$DATA[i - signatureLength]` safely
         }
-      }));
-    }($FILTER));
+        $OUT.Buffer($DATA[i]); // Send Output Data
+      }
+      $OUT.Finish()
+    }));
+  });
+}($FILTER, $FILTER.Parse));
+
+/* Usage */
+
+$FILTER.ex_plugin("path/to/image", function($DATA) {
+  // Received $DATA, from $OUT.Buffer
+});
+
+```
 
 ---
 
