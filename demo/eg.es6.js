@@ -24,6 +24,7 @@
                 i   = 0;
 
             for (; i < len; i++) {
+                if (i >= _length) {
                     if (i >= dtp) $DATA[i] &= -2;
                     if (i <  dtp) $DATA[i] ^= ( -_ubytes[ i - _length ] ^ $DATA[i] ) & 1;
                 }
