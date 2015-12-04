@@ -10,9 +10,26 @@ FILTER doesn't use DOM JavaScript methods such as `canvas`, instead, FILTER uses
 
 This means FILTER can run in almost any ECMAScript enviorment such as node.js, rhino, spidermonkey, and others.
 
-FILTER, manually parses the image files, and using `$FILTER.Parse`, FILTER makes it easy to manually parse and edit images, and other files.
+FILTER, manually parses the image files, and using `Filter.Parse`, FILTER makes it easy to manually parse and edit images, and other files.
 
 Due to JavaScript's 32-bit nature, buffers are limited to 4GB. An error will be thrown if an overflow occurs.
+
+---
+# Enviorments
+
+All of FILTER's data is contained in either: a. the `Filter` global; or b., through the exported `FILTER`. Various enviorments have different support
+
+## Browser:
+
+    window.$FILTER = Filter;
+    
+## Server:
+
+    import * as $FILTER from 'FILTER'
+
+The only browser specific class is `$$Canvas`. For compatibility, the `$Parse` class wraps this up, `$Parse` will detect for the `document` global and various other canvas specific support to centeralize image parsing.
+
+Image parsing on enviorments which don't support `$$Canvas`, use the `Filter.Parse` engine. This uses the `$Parse.Signature` to detect files and `$Parse.Read` to extract image data.
 
 ---
 # Reference
