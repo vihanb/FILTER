@@ -4,20 +4,65 @@
 "use strict";
 
 $Plugin("PNGSteg", function ($IN, $OUT) {
-  return new $Load($IN[0]).Submit($Buffer(function ($DATA) {
-    $OUT.SetBuffer($DATA.length);
+    return new $Load($IN[0]).Submit($Buffer(function ($DATA) {
+        $OUT.SetBuffer($DATA.length);
 
-    var read = $Parse.Signature($DATA).type;
+        // FILE CONSTANTS
+        // Currently set to PNG Block data
+        var LEN = 4;
+        var NAME = 4;
+        var PAD = 4;
 
-    for (var i = 0; i < $DATA.length; i++) {
-      // if (i >= read) { }
-      $OUT.Buffer = $DATA[i];
-    }
+        var RES = ["IHDR", "PLTE", "IDAT", "IEND", "cHRM", "gAMA", "iCCP", "sBIT", "sRGB", "bKGD", "hIST", "tRNS", "pHYs", "sPLT", "tIME", "iTXt", "tEXt", "zTXt"];
 
-    $OUT.Close();
-  }));
+        // Tests
+        var types = {};
+        RES.forEach(function (name) {
+            return types[name] = 0;
+        });
+
+        // Variables
+        var read = $Parse.Signature($DATA).type,
+            queue = read.length;
+
+        var _loop = function (i) {
+            if (i === queue) {
+                var LENGTH = Array(LEN).fill().reduce(function (prev, _, iter) {
+                    return prev + $DATA[i + iter];
+                }, 0);
+                var TYPE = Array(NAME).fill().reduce(function (prev, _, iter) {
+                    return prev + String.fromCharCode($DATA[i + iter + LEN]);
+                }, "");
+
+                if (TYPE !== "IEND" && LENGTH !== 0) {
+                    if (!types[TYPE]) types[TYPE] = 0;
+                    types[TYPE]++;
+                    if (!RES.includes(TYPE) && $DATA[i + LEN + NAME + LENGTH - 1]) {
+                        $DATA[i + LEN + NAME + LENGTH - 2] ^= (0 ^ $DATA[i + LEN + NAME + LENGTH - 1]) & 1;
+                        console.log("RAN");
+                    }
+
+                    // Next Chunk
+                    queue += LENGTH + NAME + PAD;
+                }
+            }
+            $OUT.Buffer = $DATA[i];
+        };
+
+        for (var i = 0; i < $DATA.length; i++) {
+            _loop(i);
+        }
+        console.log(types);
+
+        $OUT.Close(btoa(Array.prototype.reduce.call($DATA, function (prev, cur) {
+            return prev + String.fromCharCode(cur);
+        }, "")));
+    }));
 });
 
-Filter.PNGSteg("https://lh4.ggpht.com/wKrDLLmmxjfRG2-E-k5L5BUuHWpCOe4lWRF7oVs1Gzdn5e5yvr8fj-ORTlBF43U47yI=w300", [function (data, Stream) {
-  console.log(data);
+// 300
+
+Filter.PNGSteg("https://upload.wikimedia.org/wikipedia/commons/4/47/PNG_transparency_demonstration_1.png", "Example Text to Encode", [function (data, Stream) {
+    console.log(Stream.Buffer);
+    document.body.innerHTML += "<img src=\"data:image/png;base64," + data + "\">";
 }]);
