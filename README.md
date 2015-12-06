@@ -144,12 +144,12 @@ $Plugin("PNGSteg", ($IN, $OUT) => new $Load($IN[0]).Submit($Buffer($DATA => {
                 FixedReduce(TAG, index => String.fromCharCode($DATA[i + index + LEN]), "")
             ];
 
-            if (TYPE !== "IEND" && LENGTH !== 0) {
-                let s_bit = i + LEN + TAG; // Block data start indexs
-                // Check block name (TYPE), do something with s_bit
-
-                // Next Chunk
-                queue += LENGTH + TAG + PAD;
+            if (TYPE !== "IEND") {
+                if (LENGTH !== 0) {
+                    let sbit = i + LEN + TAG; // Block data start indexs
+                    // Check block name (TYPE), do something with sbit
+                }
+                queue += LENGTH + TAG + PAD; // Next Chunk
             }
         }
         $OUT.Buffer = $DATA[i];
