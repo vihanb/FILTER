@@ -3,23 +3,30 @@
 
 "use strict";
 
+var _templateObject = _taggedTemplateLiteral(["|"], ["|"]);
+
+function _taggedTemplateLiteral(strings, raw) { return Object.freeze(Object.defineProperties(strings, { raw: { value: Object.freeze(raw) } })); }
+
 $Plugin("PNGSteg", function ($IN, $OUT) {
     return new $Load($IN[0]).Submit($Buffer(function ($DATA) {
         $OUT.SetBuffer($DATA.length);
 
+        // Helpers
+        var FixedReduce = function FixedReduce(len, func, prev) {
+            if (len === undefined) len = 0;
+            if (func === undefined) func = function () {};
+
+            return Array(len).fill().reduce(function (p, _, i, a) {
+                return prev + func(i, a);
+            }, prev);
+        };
+
         // FILE CONSTANTS
         // Currently set to PNG Block data
         var LEN = 4;
-        var NAME = 4;
+        var TAG = 4;
         var PAD = 4;
-
-        var RES = ["IHDR", "PLTE", "IDAT", "IEND", "cHRM", "gAMA", "iCCP", "sBIT", "sRGB", "bKGD", "hIST", "tRNS", "pHYs", "sPLT", "tIME", "iTXt", "tEXt", "zTXt"];
-
-        // Tests
-        var types = {};
-        RES.forEach(function (name) {
-            return types[name] = 0;
-        });
+        var RES = "IHDR|PLTE|IDAT|IEND|cHRM|gAMA|iCCP|sBIT|sRGB|bKGD|hIST|tRNS|pHYs|sPLT|tIME|iTXt|tEXt|zTXt".split(_templateObject); // Reserved Chunk Names
 
         // Variables
         var read = $Parse.Signature($DATA).type,
@@ -27,23 +34,21 @@ $Plugin("PNGSteg", function ($IN, $OUT) {
 
         var _loop = function (i) {
             if (i === queue) {
-                var LENGTH = Array(LEN).fill().reduce(function (prev, _, iter) {
-                    return prev + $DATA[i + iter];
+                var LENGTH = FixedReduce(LEN, function (index) {
+                    return $DATA[i + index];
                 }, 0);
-                var TYPE = Array(NAME).fill().reduce(function (prev, _, iter) {
-                    return prev + String.fromCharCode($DATA[i + iter + LEN]);
+                var TYPE = FixedReduce(TAG, function (index) {
+                    return String.fromCharCode($DATA[i + index + LEN]);
                 }, "");
 
                 if (TYPE !== "IEND" && LENGTH !== 0) {
-                    if (!types[TYPE]) types[TYPE] = 0;
-                    types[TYPE]++;
-                    if (!RES.includes(TYPE) && $DATA[i + LEN + NAME + LENGTH - 1]) {
-                        $DATA[i + LEN + NAME + LENGTH - 2] ^= (0 ^ $DATA[i + LEN + NAME + LENGTH - 1]) & 1;
+                    if (!RES.includes(TYPE) && $DATA[i + LEN + TAG + LENGTH - 1]) {
+                        $DATA[i + LEN + TAG + LENGTH - 1] ^= (1 ^ $DATA[i + LEN + TAG + LENGTH - 1]) & 1;
                         console.log("RAN");
                     }
 
                     // Next Chunk
-                    queue += LENGTH + NAME + PAD;
+                    queue += LENGTH + TAG + PAD;
                 }
             }
             $OUT.Buffer = $DATA[i];
@@ -52,8 +57,6 @@ $Plugin("PNGSteg", function ($IN, $OUT) {
         for (var i = 0; i < $DATA.length; i++) {
             _loop(i);
         }
-        console.log(types);
-
         $OUT.Close(btoa(Array.prototype.reduce.call($DATA, function (prev, cur) {
             return prev + String.fromCharCode(cur);
         }, "")));
