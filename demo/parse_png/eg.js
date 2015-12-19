@@ -3,7 +3,10 @@
 
 "use strict";
 
-var _templateObject = _taggedTemplateLiteral(["|"], ["|"]);
+var _templateObject = _taggedTemplateLiteral(["|"], ["|"]),
+    _templateObject2 = _taggedTemplateLiteral([""], [""]);
+
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) arr2[i] = arr[i]; return arr2; } else { return Array.from(arr); } }
 
 function _taggedTemplateLiteral(strings, raw) { return Object.freeze(Object.defineProperties(strings, { raw: { value: Object.freeze(raw) } })); }
 
@@ -15,7 +18,6 @@ $Plugin("PNGSteg", function ($IN, $OUT) {
         var FixedReduce = function FixedReduce(len, func, prev) {
             if (len === undefined) len = 0;
             if (func === undefined) func = function () {};
-
             return Array(len).fill().reduce(function (p, _, i, a) {
                 return prev + func(i, a);
             }, prev);
@@ -28,6 +30,13 @@ $Plugin("PNGSteg", function ($IN, $OUT) {
         var PAD = 4;
         var RES = "IHDR|PLTE|IDAT|IEND|cHRM|gAMA|iCCP|sBIT|sRGB|bKGD|hIST|tRNS|pHYs|sPLT|tIME|iTXt|tEXt|zTXt".split(_templateObject); // Reserved Chunk Names
 
+        // Data
+        var W_MAX = 32; // bits / char
+        var W_PAD = "0".repeat(W_MAX);
+        var write = [].concat(_toConsumableArray($IN[1])).map(function (char) {
+            return (W_PAD + char.charCodeAt().toString(2)).slice(-W_MAX);
+        }).join(_templateObject2).split(_templateObject2);
+
         // Variables
         var read = $Parse.Signature($DATA).type,
             queue = read.length;
@@ -37,18 +46,20 @@ $Plugin("PNGSteg", function ($IN, $OUT) {
                 var LENGTH = FixedReduce(LEN, function (index) {
                     return $DATA[i + index];
                 }, 0);
-                var TYPE = FixedReduce(TAG, function (index) {
-                    return String.fromCharCode($DATA[i + index + LEN]);
+                var TYPE = Array(TAG).fill().reduce(function (prev, _, iter) {
+                    return prev + String.fromCharCode($DATA[i + iter + LEN]);
                 }, "");
 
-                if (TYPE !== "IEND" && LENGTH !== 0) {
-                    if (!RES.includes(TYPE) && $DATA[i + LEN + TAG + LENGTH - 1]) {
-                        $DATA[i + LEN + TAG + LENGTH - 1] ^= (1 ^ $DATA[i + LEN + TAG + LENGTH - 1]) & 1;
-                        console.log("RAN");
+                if (TYPE !== "IEND") {
+                    if (LENGTH !== 0) {
+                        var sbit = i + LEN + TAG + LENGTH - 1,
+                            sbyte = $DATA[sbit];
+                        if (!RES.includes(TYPE) && sbyte && write.length) {
+                            if (TYPE.indexOf("[object Object]")) console.log(String.fromCharCode($DATA[i + TYPE.indexOf("[object Object]") + LEN]));
+                            $DATA[sbit] ^= (write.shift() ^ sbyte) & 1;
+                        }
                     }
-
-                    // Next Chunk
-                    queue += LENGTH + TAG + PAD;
+                    queue += LENGTH + TAG + PAD; // Next Chunk
                 }
             }
             $OUT.Buffer = $DATA[i];
