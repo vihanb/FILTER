@@ -5,6 +5,11 @@ This *may* be merged with JAW, later on as development continues, but will remai
 
 ---
 # What is FILTER? How will it help me and how can I use it?
+
+Filter is a ECMAScript (JavaScript) library that can read/write files. Filter is designed for image proccesssing but supports features for most binary formats
+
+---
+
 Here's an example. This can proccess a PNG file after recieving binary data
 
 ```js
